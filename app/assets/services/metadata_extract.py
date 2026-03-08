@@ -278,18 +278,16 @@ def _extract_safetensors_metadata(
 def extract_file_metadata(
     abs_path: str,
     stat_result: os.stat_result | None = None,
-    enable_safetensors: bool = True,
     relative_filename: str | None = None,
 ) -> ExtractedMetadata:
-    """Extract metadata from a file using tier 1 and optionally tier 2 methods.
+    """Extract metadata from a file using tier 1 and tier 2 methods.
 
-    Tier 1 (always): Filesystem metadata from path and stat
-    Tier 2 (optional): Safetensors header parsing if applicable
+    Tier 1: Filesystem metadata from path and stat
+    Tier 2: Safetensors header parsing if applicable
 
     Args:
         abs_path: Absolute path to the file
         stat_result: Optional pre-fetched stat result (saves a syscall)
-        enable_safetensors: Whether to parse safetensors headers (tier 2)
         relative_filename: Optional relative filename to use instead of basename
             (e.g., "flux/123/model.safetensors" for model paths)
 
@@ -318,7 +316,7 @@ def extract_file_metadata(
         meta.content_length = stat_result.st_size
 
     # Tier 2: Safetensors header (if applicable and enabled)
-    if enable_safetensors and ext.lower() in SAFETENSORS_EXTENSIONS:
+    if ext.lower() in SAFETENSORS_EXTENSIONS:
         header = _read_safetensors_header(abs_path)
         if header:
             try:

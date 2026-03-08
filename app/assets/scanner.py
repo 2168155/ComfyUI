@@ -314,7 +314,6 @@ def build_asset_specs(
             metadata = extract_file_metadata(
                 abs_p,
                 stat_result=stat_p,
-                enable_safetensors=True,
                 relative_filename=rel_fname,
             )
 
@@ -435,7 +434,6 @@ def enrich_asset(
         metadata = extract_file_metadata(
             file_path,
             stat_result=stat_p,
-            enable_safetensors=True,
             relative_filename=rel_fname,
         )
         if metadata:
