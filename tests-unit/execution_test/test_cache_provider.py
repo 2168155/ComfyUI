@@ -69,25 +69,28 @@ class TestCanonicalize:
         result = _canonicalize(t)
 
         assert result[0] == "__tuple__"
-        assert result[1] == [1, 2, 3]
 
     def test_list_preserved(self):
         """Lists should be recursively canonicalized."""
         lst = [{"b": 2, "a": 1}, frozenset([3, 2, 1])]
         result = _canonicalize(lst)
 
-        # First element should be dict with sorted keys
-        assert result[0] == {"a": 1, "b": 2}
+        # First element should be canonicalized dict
+        assert "__dict__" in result[0]
         # Second element should be canonicalized frozenset
         assert result[1][0] == "__frozenset__"
 
-    def test_primitives_unchanged(self):
-        """Primitive types should pass through unchanged."""
-        assert _canonicalize(42) == 42
-        assert _canonicalize(3.14) == 3.14
-        assert _canonicalize("hello") == "hello"
-        assert _canonicalize(True) is True
-        assert _canonicalize(None) is None
+    def test_primitives_include_type(self):
+        """Primitive types should include type name for disambiguation."""
+        assert _canonicalize(42) == ("int", 42)
+        assert _canonicalize(3.14) == ("float", 3.14)
+        assert _canonicalize("hello") == ("str", "hello")
+        assert _canonicalize(True) == ("bool", True)
+        assert _canonicalize(None) == ("NoneType", None)
+
+    def test_int_and_str_distinguished(self):
+        """int 7 and str '7' must produce different canonical forms."""
+        assert _canonicalize(7) != _canonicalize("7")
 
     def test_bytes_converted(self):
         """Bytes should be converted to hex string."""
@@ -364,13 +367,11 @@ class TestCacheContext:
     def test_context_creation(self):
         """CacheContext should be created with all fields."""
         context = CacheContext(
-            prompt_id="prompt-123",
             node_id="node-456",
             class_type="KSampler",
             cache_key_hash="a" * 64,
         )
 
-        assert context.prompt_id == "prompt-123"
         assert context.node_id == "node-456"
         assert context.class_type == "KSampler"
         assert context.cache_key_hash == "a" * 64

@@ -5,7 +5,6 @@ from dataclasses import dataclass
 
 @dataclass
 class CacheContext:
-    prompt_id: str
     node_id: str
     class_type: str
     cache_key_hash: str  # SHA256 hex digest

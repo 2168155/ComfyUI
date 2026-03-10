@@ -714,9 +714,6 @@ class PromptExecutor:
         self.status_messages = []
         self.add_message("execution_start", { "prompt_id": prompt_id}, broadcast=False)
 
-        for cache in self.caches.all:
-            cache._current_prompt_id = prompt_id
-
         self._notify_prompt_lifecycle("start", prompt_id)
 
         try:

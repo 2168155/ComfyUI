@@ -156,8 +156,6 @@ class BasicCache:
         self.cache = {}
         self.subcaches = {}
 
-        self._current_prompt_id = ''
-
     async def set_prompt(self, dynprompt, node_ids, is_changed_cache):
         self.dynprompt = dynprompt
         self.cache_key_set = self.key_class(dynprompt, node_ids, is_changed_cache)
@@ -319,7 +317,6 @@ class BasicCache:
             if cache_key_hash is None:
                 return None
             return CacheContext(
-                prompt_id=self._current_prompt_id,
                 node_id=node_id,
                 class_type=self._get_class_type(node_id),
                 cache_key_hash=cache_key_hash,
@@ -333,7 +330,6 @@ class BasicCache:
         subcache = self.subcaches.get(subcache_key, None)
         if subcache is None:
             subcache = BasicCache(self.key_class)
-            subcache._current_prompt_id = self._current_prompt_id
             self.subcaches[subcache_key] = subcache
         await subcache.set_prompt(self.dynprompt, children_ids, self.is_changed_cache)
         return subcache

@@ -73,9 +73,12 @@ def _canonicalize(obj: Any) -> Any:
     elif isinstance(obj, list):
         return [_canonicalize(item) for item in obj]
     elif isinstance(obj, dict):
-        return {str(k): _canonicalize(v) for k, v in sorted(obj.items())}
+        return {"__dict__": sorted(
+            [[_canonicalize(k), _canonicalize(v)] for k, v in obj.items()],
+            key=lambda x: json.dumps(x, sort_keys=True)
+        )}
     elif isinstance(obj, (int, float, str, bool, type(None))):
-        return obj
+        return (type(obj).__name__, obj)
     elif isinstance(obj, bytes):
         return ("__bytes__", obj.hex())
     else:
