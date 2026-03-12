@@ -319,7 +319,7 @@ def list_references_page(
             select(AssetReferenceTag.asset_reference_id, Tag.name)
             .join(Tag, Tag.name == AssetReferenceTag.tag_name)
             .where(AssetReferenceTag.asset_reference_id.in_(id_list))
-            .order_by(AssetReferenceTag.added_at)
+            .order_by(AssetReferenceTag.tag_name.asc())
         )
         for ref_id, tag_name in rows.all():
             tag_map[ref_id].append(tag_name)

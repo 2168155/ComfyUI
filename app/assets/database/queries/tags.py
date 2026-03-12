@@ -75,9 +75,9 @@ def get_reference_tags(session: Session, reference_id: str) -> list[str]:
         tag_name
         for (tag_name,) in (
             session.execute(
-                select(AssetReferenceTag.tag_name).where(
-                    AssetReferenceTag.asset_reference_id == reference_id
-                )
+                select(AssetReferenceTag.tag_name)
+                .where(AssetReferenceTag.asset_reference_id == reference_id)
+                .order_by(AssetReferenceTag.tag_name.asc())
             )
         ).all()
     ]
@@ -120,7 +120,7 @@ def set_reference_tags(
         )
         session.flush()
 
-    return SetTagsResult(added=to_add, removed=to_remove, total=desired)
+    return SetTagsResult(added=sorted(to_add), removed=sorted(to_remove), total=sorted(desired))
 
 
 def add_tags_to_reference(
@@ -364,7 +364,7 @@ def list_tag_counts_for_filtered_assets(
         )
         .where(AssetReferenceTag.asset_reference_id.in_(select(ref_sq.c.id)))
         .group_by(AssetReferenceTag.tag_name)
-        .order_by(func.count(AssetReferenceTag.asset_reference_id).desc())
+        .order_by(func.count(AssetReferenceTag.asset_reference_id).desc(), AssetReferenceTag.tag_name.asc())
         .limit(limit)
     )
 
