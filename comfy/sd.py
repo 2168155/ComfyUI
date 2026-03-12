@@ -954,7 +954,8 @@ class VAE:
                 if pixel_samples is None:
                     pixel_samples = torch.empty((samples_in.shape[0],) + tuple(out.shape[1:]), device=self.output_device)
                 pixel_samples[x:x+batch_number] = out
-        except model_management.OOM_EXCEPTION:
+        except Exception as e:
+            model_management.raise_non_oom(e)
             logging.warning("Warning: Ran out of memory when regular VAE decoding, retrying with tiled VAE decoding.")
             #NOTE: We don't know what tensors were allocated to stack variables at the time of the
             #exception and the exception itself refs them all until we get out of this except block.
@@ -1029,7 +1030,8 @@ class VAE:
                     samples = torch.empty((pixel_samples.shape[0],) + tuple(out.shape[1:]), device=self.output_device)
                 samples[x:x + batch_number] = out
 
-        except model_management.OOM_EXCEPTION:
+        except Exception as e:
+            model_management.raise_non_oom(e)
             logging.warning("Warning: Ran out of memory when regular VAE encoding, retrying with tiled VAE encoding.")
             #NOTE: We don't know what tensors were allocated to stack variables at the time of the
             #exception and the exception itself refs them all until we get out of this except block.
@@ -1467,7 +1469,7 @@ def load_text_encoder_state_dicts(state_dicts=[], embedding_directory=None, clip
             clip_target.clip = comfy.text_encoders.kandinsky5.te(**llama_detect(clip_data))
             clip_target.tokenizer = comfy.text_encoders.kandinsky5.Kandinsky5TokenizerImage
         elif clip_type == CLIPType.LTXV:
-            clip_target.clip = comfy.text_encoders.lt.ltxav_te(**llama_detect(clip_data))
+            clip_target.clip = comfy.text_encoders.lt.ltxav_te(**llama_detect(clip_data), **comfy.text_encoders.lt.sd_detect(clip_data))
             clip_target.tokenizer = comfy.text_encoders.lt.LTXAVGemmaTokenizer
             tokenizer_data["spiece_model"] = clip_data[0].get("spiece_model", None)
         elif clip_type == CLIPType.NEWBIE:
