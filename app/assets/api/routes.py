@@ -360,7 +360,7 @@ async def create_asset_from_hash_route(request: web.Request) -> web.Response:
         **asset.model_dump(),
         created_new=result.created_new,
     )
-    return web.json_response(payload_out.model_dump(mode="json"), status=201)
+    return web.json_response(payload_out.model_dump(mode="json", exclude_none=True), status=201)
 
 
 @ROUTES.post("/api/assets")
@@ -425,7 +425,7 @@ async def upload_asset(request: web.Request) -> web.Response:
                     **asset.model_dump(),
                     created_new=False,
                 )
-                return web.json_response(payload_out.model_dump(mode="json"), status=200)
+                return web.json_response(payload_out.model_dump(mode="json", exclude_none=True), status=200)
 
         # Fast path: hash exists, create AssetReference without writing anything
         if spec.hash and parsed.provided_hash_exists is True:
@@ -487,7 +487,7 @@ async def upload_asset(request: web.Request) -> web.Response:
         created_new=result.created_new,
     )
     status = 201 if result.created_new else 200
-    return web.json_response(payload_out.model_dump(mode="json"), status=status)
+    return web.json_response(payload_out.model_dump(mode="json", exclude_none=True), status=status)
 
 
 @ROUTES.put(f"/api/assets/{{id:{UUID_RE}}}")
