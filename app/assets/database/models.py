@@ -193,7 +193,7 @@ class AssetReferenceMeta(Base):
         Index("ix_asset_reference_meta_key_val_bool", "key", "val_bool"),
         CheckConstraint(
             "val_str IS NOT NULL OR val_num IS NOT NULL OR val_bool IS NOT NULL OR val_json IS NOT NULL",
-            name="ck_asset_reference_meta_has_value",
+            name="has_value",
         ),
     )
 

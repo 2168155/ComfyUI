@@ -66,8 +66,8 @@ def convert_metadata_to_rows(key: str, value) -> list[dict]:
 
     if isinstance(value, list):
         if all(_check_is_scalar(x) for x in value):
-            return [_scalar_to_row(key, i, x) for i, x in enumerate(value)]
-        return [{"key": key, "ordinal": i, "val_json": x} for i, x in enumerate(value)]
+            return [_scalar_to_row(key, i, x) for i, x in enumerate(value) if x is not None]
+        return [{"key": key, "ordinal": i, "val_json": x} for i, x in enumerate(value) if x is not None]
 
     return [{"key": key, "ordinal": 0, "val_json": value}]
 

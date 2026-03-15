@@ -53,9 +53,7 @@ def upgrade() -> None:
         "DELETE FROM asset_reference_meta"
         " WHERE val_str IS NULL AND val_num IS NULL AND val_bool IS NULL AND val_json IS NULL"
     )
-    with op.batch_alter_table(
-        "asset_reference_meta", naming_convention=NAMING_CONVENTION
-    ) as batch_op:
+    with op.batch_alter_table("asset_reference_meta") as batch_op:
         batch_op.create_check_constraint(
             "ck_asset_reference_meta_has_value",
             "val_str IS NOT NULL OR val_num IS NOT NULL OR val_bool IS NOT NULL OR val_json IS NOT NULL",
@@ -63,8 +61,18 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    # SQLite doesn't reflect CHECK constraints, so we must declare it
+    # explicitly via table_args for the batch recreate to find it.
+    # Use the fully-rendered constraint name to avoid the naming convention
+    # doubling the prefix.
     with op.batch_alter_table(
-        "asset_reference_meta", naming_convention=NAMING_CONVENTION
+        "asset_reference_meta",
+        table_args=[
+            sa.CheckConstraint(
+                "val_str IS NOT NULL OR val_num IS NOT NULL OR val_bool IS NOT NULL OR val_json IS NOT NULL",
+                name="ck_asset_reference_meta_has_value",
+            ),
+        ],
     ) as batch_op:
         batch_op.drop_constraint(
             "ck_asset_reference_meta_has_value", type_="check"
