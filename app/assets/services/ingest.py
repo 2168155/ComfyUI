@@ -26,6 +26,7 @@ from app.assets.database.queries import (
 from app.assets.helpers import get_utc_now, normalize_tags
 from app.assets.services.bulk_ingest import batch_insert_seed_assets
 from app.assets.services.file_utils import get_size_and_mtime_ns
+from app.assets.services.metadata_extract import extract_file_metadata
 from app.assets.services.path_utils import (
     compute_relative_filename,
     get_name_and_tags_from_asset_path,
@@ -196,6 +197,7 @@ def ingest_existing_file(
             session.commit()
             return True
 
+        metadata = extract_file_metadata(locator)
         spec = {
             "abs_path": abs_path,
             "size_bytes": size_bytes,
@@ -203,9 +205,9 @@ def ingest_existing_file(
             "info_name": name,
             "tags": tags,
             "fname": os.path.basename(abs_path),
-            "metadata": user_metadata,
+            "metadata": metadata,
             "hash": None,
-            "mime_type": mime_type,
+            "mime_type": mime_type or metadata.content_type,
             "job_id": job_id,
         }
         result = batch_insert_seed_assets(session, [spec], owner_id=owner_id)

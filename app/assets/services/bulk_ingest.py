@@ -34,7 +34,7 @@ class SeedAssetSpec(TypedDict):
     info_name: str
     tags: list[str]
     fname: str
-    metadata: ExtractedMetadata | dict[str, Any] | None
+    metadata: ExtractedMetadata | None
     hash: str | None
     mime_type: str | None
     job_id: str | None
@@ -152,10 +152,8 @@ def batch_insert_seed_assets(
 
         # Build user_metadata from extracted metadata or fallback to filename
         extracted_metadata = spec.get("metadata")
-        if isinstance(extracted_metadata, dict):
-            user_metadata: dict[str, Any] | None = extracted_metadata
-        elif extracted_metadata:
-            user_metadata = extracted_metadata.to_user_metadata()
+        if extracted_metadata:
+            user_metadata: dict[str, Any] | None = extracted_metadata.to_user_metadata()
         elif spec["fname"]:
             user_metadata = {"filename": spec["fname"]}
         else:
