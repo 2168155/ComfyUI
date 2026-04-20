@@ -1673,13 +1673,15 @@ def load_state_dict_guess_config(sd, output_vae=True, output_clip=True, output_c
         inital_load_device = model_management.unet_inital_load_device(parameters, unet_dtype)
         model = model_config.get_model(sd, diffusion_model_prefix, device=inital_load_device)
         ModelPatcher = comfy.model_patcher.ModelPatcher if disable_dynamic else comfy.model_patcher.CoreModelPatcher
-        model_patcher = ModelPatcher(model, load_device=load_device, offload_device=model_management.unet_offload_device())
+        offload_device = model_options.get("offload_device", model_management.unet_offload_device())
+        model_patcher = ModelPatcher(model, load_device=load_device, offload_device=offload_device)
         model.load_model_weights(sd, diffusion_model_prefix, assign=model_patcher.is_dynamic())
 
     if output_vae:
         vae_sd = comfy.utils.state_dict_prefix_replace(sd, {k: "" for k in model_config.vae_key_prefix}, filter_keys=True)
         vae_sd = model_config.process_vae_state_dict(vae_sd)
-        vae = VAE(sd=vae_sd, metadata=metadata)
+        vae_device = model_options.get("load_device", None)
+        vae = VAE(sd=vae_sd, metadata=metadata, device=vae_device)
 
     if output_clip:
         if te_model_options.get("custom_operations", None) is None:
@@ -1788,7 +1790,7 @@ def load_diffusion_model_state_dict(sd, model_options={}, metadata=None, disable
                 else:
                     logging.warning("{} {}".format(diffusers_keys[k], k))
 
-    offload_device = model_management.unet_offload_device()
+    offload_device = model_options.get("offload_device", model_management.unet_offload_device())
     unet_weight_dtype = list(model_config.supported_inference_dtypes)
     if model_config.quant_config is not None:
         weight_dtype = None

@@ -613,10 +613,16 @@ class CheckpointLoaderSimple:
     def load_checkpoint(self, ckpt_name, device="default"):
         ckpt_path = folder_paths.get_full_path_or_raise("checkpoints", ckpt_name)
         model_options = {}
+        te_model_options = {}
         resolved = comfy.model_management.resolve_gpu_device_option(device)
         if resolved is not None:
-            model_options["load_device"] = resolved
-        out = comfy.sd.load_checkpoint_guess_config(ckpt_path, output_vae=True, output_clip=True, embedding_directory=folder_paths.get_folder_paths("embeddings"), model_options=model_options)
+            if resolved.type == "cpu":
+                model_options["load_device"] = model_options["offload_device"] = resolved
+                te_model_options["load_device"] = te_model_options["offload_device"] = resolved
+            else:
+                model_options["load_device"] = resolved
+                te_model_options["load_device"] = resolved
+        out = comfy.sd.load_checkpoint_guess_config(ckpt_path, output_vae=True, output_clip=True, embedding_directory=folder_paths.get_folder_paths("embeddings"), model_options=model_options, te_model_options=te_model_options)
         return out[:3]
 
 class DiffusersLoader:
@@ -997,7 +1003,10 @@ class UNETLoader:
 
         resolved = comfy.model_management.resolve_gpu_device_option(device)
         if resolved is not None:
-            model_options["load_device"] = resolved
+            if resolved.type == "cpu":
+                model_options["load_device"] = model_options["offload_device"] = resolved
+            else:
+                model_options["load_device"] = resolved
 
         unet_path = folder_paths.get_full_path_or_raise("diffusion_models", unet_name)
         model = comfy.sd.load_diffusion_model(unet_path, model_options=model_options)

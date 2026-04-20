@@ -260,7 +260,7 @@ def resolve_gpu_device_option(option: str):
         try:
             idx = int(option[4:])
             devices = get_all_torch_devices()
-            if idx < len(devices):
+            if 0 <= idx < len(devices):
                 return devices[idx]
             else:
                 logging.warning(f"Device '{option}' not available (only {len(devices)} GPU(s)), using default.")
