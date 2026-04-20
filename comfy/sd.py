@@ -1633,7 +1633,7 @@ def load_state_dict_guess_config(sd, output_vae=True, output_clip=True, output_c
     diffusion_model_prefix = model_detection.unet_prefix_from_state_dict(sd)
     parameters = comfy.utils.calculate_parameters(sd, diffusion_model_prefix)
     weight_dtype = comfy.utils.weight_dtype(sd, diffusion_model_prefix)
-    load_device = model_management.get_torch_device()
+    load_device = model_options.get("load_device", model_management.get_torch_device())
 
     custom_operations = model_options.get("custom_operations", None)
     if custom_operations is None:
@@ -1763,7 +1763,7 @@ def load_diffusion_model_state_dict(sd, model_options={}, metadata=None, disable
     parameters = comfy.utils.calculate_parameters(sd)
     weight_dtype = comfy.utils.weight_dtype(sd)
 
-    load_device = model_management.get_torch_device()
+    load_device = model_options.get("load_device", model_management.get_torch_device())
     model_config = model_detection.model_config_from_unet(sd, "", metadata=metadata)
 
     if model_config is not None:

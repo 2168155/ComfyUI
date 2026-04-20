@@ -591,6 +591,9 @@ class CheckpointLoaderSimple:
         return {
             "required": {
                 "ckpt_name": (folder_paths.get_filename_list("checkpoints"), {"tooltip": "The name of the checkpoint (model) to load."}),
+            },
+            "optional": {
+                "device": (comfy.model_management.get_gpu_device_options(), {"advanced": True}),
             }
         }
     RETURN_TYPES = ("MODEL", "CLIP", "VAE")
@@ -603,9 +606,13 @@ class CheckpointLoaderSimple:
     DESCRIPTION = "Loads a diffusion model checkpoint, diffusion models are used to denoise latents."
     SEARCH_ALIASES = ["load model", "checkpoint", "model loader", "load checkpoint", "ckpt", "model"]
 
-    def load_checkpoint(self, ckpt_name):
+    def load_checkpoint(self, ckpt_name, device="default"):
         ckpt_path = folder_paths.get_full_path_or_raise("checkpoints", ckpt_name)
-        out = comfy.sd.load_checkpoint_guess_config(ckpt_path, output_vae=True, output_clip=True, embedding_directory=folder_paths.get_folder_paths("embeddings"))
+        model_options = {}
+        resolved = comfy.model_management.resolve_gpu_device_option(device)
+        if resolved is not None:
+            model_options["load_device"] = resolved
+        out = comfy.sd.load_checkpoint_guess_config(ckpt_path, output_vae=True, output_clip=True, embedding_directory=folder_paths.get_folder_paths("embeddings"), model_options=model_options)
         return out[:3]
 
 class DiffusersLoader:
@@ -807,14 +814,17 @@ class VAELoader:
 
     @classmethod
     def INPUT_TYPES(s):
-        return {"required": { "vae_name": (s.vae_list(s), )}}
+        return {"required": { "vae_name": (s.vae_list(s), )},
+                "optional": {
+                              "device": (comfy.model_management.get_gpu_device_options(), {"advanced": True}),
+                             }}
     RETURN_TYPES = ("VAE",)
     FUNCTION = "load_vae"
 
     CATEGORY = "loaders"
 
     #TODO: scale factor?
-    def load_vae(self, vae_name):
+    def load_vae(self, vae_name, device="default"):
         metadata = None
         if vae_name == "pixel_space":
             sd = {}
@@ -827,7 +837,8 @@ class VAELoader:
             else:
                 vae_path = folder_paths.get_full_path_or_raise("vae", vae_name)
             sd, metadata = comfy.utils.load_torch_file(vae_path, return_metadata=True)
-        vae = comfy.sd.VAE(sd=sd, metadata=metadata)
+        resolved = comfy.model_management.resolve_gpu_device_option(device)
+        vae = comfy.sd.VAE(sd=sd, metadata=metadata, device=resolved)
         vae.throw_exception_if_invalid()
         return (vae,)
 
@@ -953,13 +964,16 @@ class UNETLoader:
     def INPUT_TYPES(s):
         return {"required": { "unet_name": (folder_paths.get_filename_list("diffusion_models"), ),
                               "weight_dtype": (["default", "fp8_e4m3fn", "fp8_e4m3fn_fast", "fp8_e5m2"], {"advanced": True})
+                             },
+                "optional": {
+                              "device": (comfy.model_management.get_gpu_device_options(), {"advanced": True}),
                              }}
     RETURN_TYPES = ("MODEL",)
     FUNCTION = "load_unet"
 
     CATEGORY = "advanced/loaders"
 
-    def load_unet(self, unet_name, weight_dtype):
+    def load_unet(self, unet_name, weight_dtype, device="default"):
         model_options = {}
         if weight_dtype == "fp8_e4m3fn":
             model_options["dtype"] = torch.float8_e4m3fn
@@ -968,6 +982,10 @@ class UNETLoader:
             model_options["fp8_optimizations"] = True
         elif weight_dtype == "fp8_e5m2":
             model_options["dtype"] = torch.float8_e5m2
+
+        resolved = comfy.model_management.resolve_gpu_device_option(device)
+        if resolved is not None:
+            model_options["load_device"] = resolved
 
         unet_path = folder_paths.get_full_path_or_raise("diffusion_models", unet_name)
         model = comfy.sd.load_diffusion_model(unet_path, model_options=model_options)
@@ -980,7 +998,7 @@ class CLIPLoader:
                               "type": (["stable_diffusion", "stable_cascade", "sd3", "stable_audio", "mochi", "ltxv", "pixart", "cosmos", "lumina2", "wan", "hidream", "chroma", "ace", "omnigen2", "qwen_image", "hunyuan_image", "flux2", "ovis", "longcat_image"], ),
                               },
                 "optional": {
-                              "device": (["default", "cpu"], {"advanced": True}),
+                              "device": (comfy.model_management.get_gpu_device_options(), {"advanced": True}),
                              }}
     RETURN_TYPES = ("CLIP",)
     FUNCTION = "load_clip"
@@ -993,8 +1011,12 @@ class CLIPLoader:
         clip_type = getattr(comfy.sd.CLIPType, type.upper(), comfy.sd.CLIPType.STABLE_DIFFUSION)
 
         model_options = {}
-        if device == "cpu":
-            model_options["load_device"] = model_options["offload_device"] = torch.device("cpu")
+        resolved = comfy.model_management.resolve_gpu_device_option(device)
+        if resolved is not None:
+            if resolved.type == "cpu":
+                model_options["load_device"] = model_options["offload_device"] = resolved
+            else:
+                model_options["load_device"] = resolved
 
         clip_path = folder_paths.get_full_path_or_raise("text_encoders", clip_name)
         clip = comfy.sd.load_clip(ckpt_paths=[clip_path], embedding_directory=folder_paths.get_folder_paths("embeddings"), clip_type=clip_type, model_options=model_options)
@@ -1008,7 +1030,7 @@ class DualCLIPLoader:
                               "type": (["sdxl", "sd3", "flux", "hunyuan_video", "hidream", "hunyuan_image", "hunyuan_video_15", "kandinsky5", "kandinsky5_image", "ltxv", "newbie", "ace"], ),
                               },
                 "optional": {
-                              "device": (["default", "cpu"], {"advanced": True}),
+                              "device": (comfy.model_management.get_gpu_device_options(), {"advanced": True}),
                              }}
     RETURN_TYPES = ("CLIP",)
     FUNCTION = "load_clip"
@@ -1024,8 +1046,12 @@ class DualCLIPLoader:
         clip_path2 = folder_paths.get_full_path_or_raise("text_encoders", clip_name2)
 
         model_options = {}
-        if device == "cpu":
-            model_options["load_device"] = model_options["offload_device"] = torch.device("cpu")
+        resolved = comfy.model_management.resolve_gpu_device_option(device)
+        if resolved is not None:
+            if resolved.type == "cpu":
+                model_options["load_device"] = model_options["offload_device"] = resolved
+            else:
+                model_options["load_device"] = resolved
 
         clip = comfy.sd.load_clip(ckpt_paths=[clip_path1, clip_path2], embedding_directory=folder_paths.get_folder_paths("embeddings"), clip_type=clip_type, model_options=model_options)
         return (clip,)

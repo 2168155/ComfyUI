@@ -231,6 +231,46 @@ def get_all_torch_devices(exclude_current=False):
         devices.remove(get_torch_device())
     return devices
 
+def get_gpu_device_options():
+    """Return list of device option strings for node widgets.
+
+    Always includes "default" and "cpu". When multiple GPUs are present,
+    adds "gpu:0", "gpu:1", etc. (vendor-agnostic labels).
+    """
+    options = ["default", "cpu"]
+    devices = get_all_torch_devices()
+    if len(devices) > 1:
+        for i in range(len(devices)):
+            options.append(f"gpu:{i}")
+    return options
+
+def resolve_gpu_device_option(option: str):
+    """Resolve a device option string to a torch.device.
+
+    Returns None for "default" (let the caller use its normal default).
+    Returns torch.device("cpu") for "cpu".
+    For "gpu:N", returns the Nth torch device. Falls back to None if
+    the index is out of range (caller should use default).
+    """
+    if option is None or option == "default":
+        return None
+    if option == "cpu":
+        return torch.device("cpu")
+    if option.startswith("gpu:"):
+        try:
+            idx = int(option[4:])
+            devices = get_all_torch_devices()
+            if idx < len(devices):
+                return devices[idx]
+            else:
+                logging.warning(f"Device '{option}' not available (only {len(devices)} GPU(s)), using default.")
+                return None
+        except (ValueError, IndexError):
+            logging.warning(f"Invalid device option '{option}', using default.")
+            return None
+    logging.warning(f"Unrecognized device option '{option}', using default.")
+    return None
+
 def get_total_memory(dev=None, torch_total_too=False):
     global directml_enabled
     if dev is None:
