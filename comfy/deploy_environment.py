@@ -27,7 +27,7 @@ def get_deploy_environment() -> str:
     except FileNotFoundError:
         pass
     except Exception as e:
-        logger.warning("Failed to read %s: %s", env_file, e)
+        logger.error("Failed to read %s: %s", env_file, e)
 
     _cached_value = _DEFAULT_DEPLOY_ENV
     return _cached_value
