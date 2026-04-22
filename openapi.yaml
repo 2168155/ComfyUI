@@ -926,15 +926,7 @@ paths:
           content:
             application/json:
               schema:
-                oneOf:
-                  - type: array
-                    items:
-                      type: string
-                    description: Simple filename list
-                  - type: array
-                    items:
-                      $ref: "#/components/schemas/GetUserDataResponseFullFile"
-                    description: Full file info list (when full_info=true)
+                $ref: "#/components/schemas/ListUserdataResponse"
         "404":
           description: Directory not found
 
@@ -2618,31 +2610,45 @@ components:
     # Userdata
     # -------------------------------------------------------------------
     UserDataResponse:
-      description: Response body for `/api/userdata` — either a list of filenames or a list of full file objects, depending on the `full_info` query parameter.
+      description: |
+        Response body for the POST endpoints `/api/userdata/{file}` and
+        `/api/userdata/{file}/move/{dest}`. Returns a single item whose
+        shape depends on the `full_info` query parameter.
+      x-variant-selector:
+        full_info=true: file-info object (`GetUserDataResponseFullFile`)
+        default: relative path string
       oneOf:
-        - $ref: "#/components/schemas/UserDataResponseFull"
-        - $ref: "#/components/schemas/UserDataResponseShort"
+        - $ref: "#/components/schemas/GetUserDataResponseFullFile"
+        - type: string
+          description: Relative path of the written or moved file. Returned when `full_info` is absent or false.
 
-    UserDataResponseFull:
-      type: object
-      description: List of files in the authenticated user's data directory, as full file objects with metadata.
-      properties:
-        path:
-          type: string
-        size:
-          type: integer
-        modified:
-          type: integer
-          format: int64
-          description: Unix timestamp of last modification in milliseconds
-        created:
-          type: number
-          description: Unix timestamp of file creation
+    ListUserdataResponse:
+      description: |
+        Response body for `GET /api/userdata`. The array item shape is
+        determined by the `full_info` and `split` query parameters.
+      x-variant-selector:
+        full_info=true: array of file-info objects (`GetUserDataResponseFullFile`)
+        split=true: array of `[relative_path, ...path_components]` arrays
+        default: array of relative path strings
+      oneOf:
+        - type: array
+          items:
+            $ref: "#/components/schemas/GetUserDataResponseFullFile"
+          description: Returned when `full_info=true`.
+        - type: array
+          items:
+            type: array
+            items:
+              type: string
+            minItems: 2
+          description: |
+            Returned when `split=true` and `full_info=false`. Each inner
+            array is `[relative_path, ...path_components]`.
+        - type: array
+          items:
+            type: string
+          description: Default shape — array of file paths relative to the user data root.
 
-    UserDataResponseShort:
-      type: string
-
-      description: List of files in the authenticated user's data directory, as filename strings only.
     GetUserDataResponseFullFile:
       type: object
       description: A single entry in a full-info user data listing.
