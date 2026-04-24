@@ -1208,23 +1208,24 @@ class CFGGuider:
             all_devices = [device] + extra_devices
             self.model_options["multigpu_thread_pool"] = comfy.multigpu.MultiGPUThreadPool(all_devices)
 
-        try:
-            noise = noise.to(device=device, dtype=torch.float32)
-            latent_image = latent_image.to(device=device, dtype=torch.float32)
-            sigmas = sigmas.to(device)
-            cast_to_load_options(self.model_options, device=device, dtype=self.model_patcher.model_dtype())
+        with comfy.model_management.cuda_device_context(device):
+            try:
+                noise = noise.to(device=device, dtype=torch.float32)
+                latent_image = latent_image.to(device=device, dtype=torch.float32)
+                sigmas = sigmas.to(device)
+                cast_to_load_options(self.model_options, device=device, dtype=self.model_patcher.model_dtype())
 
-            self.model_patcher.pre_run()
-            for multigpu_patcher in multigpu_patchers:
-                multigpu_patcher.pre_run()
-            output = self.inner_sample(noise, latent_image, device, sampler, sigmas, denoise_mask, callback, disable_pbar, seed, latent_shapes=latent_shapes)
-        finally:
-            thread_pool = self.model_options.pop("multigpu_thread_pool", None)
-            if thread_pool is not None:
-                thread_pool.shutdown()
-            self.model_patcher.cleanup()
-            for multigpu_patcher in multigpu_patchers:
-                multigpu_patcher.cleanup()
+                self.model_patcher.pre_run()
+                for multigpu_patcher in multigpu_patchers:
+                    multigpu_patcher.pre_run()
+                output = self.inner_sample(noise, latent_image, device, sampler, sigmas, denoise_mask, callback, disable_pbar, seed, latent_shapes=latent_shapes)
+            finally:
+                thread_pool = self.model_options.pop("multigpu_thread_pool", None)
+                if thread_pool is not None:
+                    thread_pool.shutdown()
+                self.model_patcher.cleanup()
+                for multigpu_patcher in multigpu_patchers:
+                    multigpu_patcher.cleanup()
 
         comfy.sampler_helpers.cleanup_models(self.conds, self.loaded_models)
         del self.inner_model
