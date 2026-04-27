@@ -36,9 +36,10 @@ class Blend(io.ComfyNode):
     @classmethod
     def execute(cls, image1: torch.Tensor, image2: torch.Tensor, blend_factor: float, blend_mode: str) -> io.NodeOutput:
         image2 = image2.to(image1.device)
-        # Match channel counts by padding the image with fewer channels with 1.0s
-        # (e.g. RGB + RGBA, or any other channel-count mismatch). Mirrors the
-        # logic used by the ImageStitch node so behavior is consistent.
+        # Match channel counts when one image has an extra channel (typically
+        # an alpha channel, e.g. RGB + RGBA) by padding the image with fewer
+        # channels with 1.0s. Mirrors the logic used by the ImageStitch node
+        # so behavior is consistent across nodes.
         if image1.shape[-1] != image2.shape[-1]:
             max_channels = max(image1.shape[-1], image2.shape[-1])
             if image1.shape[-1] < max_channels:
