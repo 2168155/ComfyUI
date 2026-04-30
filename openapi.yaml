@@ -646,9 +646,7 @@ paths:
                     type: integer
                     format: int64
                     minimum: 0
-                    nullable: true
-                    x-runtime: [cloud]
-                    description: "[cloud-only] Maximum file upload size in bytes. Local ComfyUI returns null."
+                    description: "Maximum file upload size in bytes."
                   free_tier_credits:
                     type: integer
                     format: int32
@@ -1610,6 +1608,8 @@ paths:
               type: object
               x-runtime: [cloud]
               description: "[cloud-only] URL-based asset upload. Caller supplies a URL instead of a file body; the server fetches the content."
+              required:
+                - url
               properties:
                 url:
                   type: string
