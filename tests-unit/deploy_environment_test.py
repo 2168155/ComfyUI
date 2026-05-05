@@ -18,8 +18,14 @@ def _reset_cache_and_install_dir(tmp_path, monkeypatch):
 
 
 def _write_env_file(tmp_path, content: str) -> str:
+    """Write the env file with exact content (no newline translation).
+
+    `newline=""` disables Python's text-mode newline translation so the bytes
+    on disk match the literal string passed in, regardless of host OS.
+    Newline-style tests (CRLF, lone CR) rely on this.
+    """
     path = os.path.join(str(tmp_path), ".comfy_environment")
-    with open(path, "w", encoding="utf-8") as f:
+    with open(path, "w", encoding="utf-8", newline="") as f:
         f.write(content)
     return path
 
@@ -39,6 +45,26 @@ class TestGetDeployEnvironment:
     def test_only_first_line_is_used(self, tmp_path):
         _write_env_file(tmp_path, "first-line\nsecond-line\n")
         assert get_deploy_environment() == "first-line"
+
+    def test_crlf_line_ending(self, tmp_path):
+        # Windows editors often save text files with CRLF line endings.
+        # The CR must not end up in the returned value.
+        _write_env_file(tmp_path, "local-desktop2-standalone\r\n")
+        assert get_deploy_environment() == "local-desktop2-standalone"
+
+    def test_crlf_multiline_only_first_line_used(self, tmp_path):
+        _write_env_file(tmp_path, "first-line\r\nsecond-line\r\n")
+        assert get_deploy_environment() == "first-line"
+
+    def test_crlf_with_surrounding_whitespace(self, tmp_path):
+        _write_env_file(tmp_path, "  local-desktop2-standalone  \r\n")
+        assert get_deploy_environment() == "local-desktop2-standalone"
+
+    def test_lone_cr_line_ending(self, tmp_path):
+        # Classic-Mac / some legacy editors use a bare CR.
+        # Universal-newlines decoding treats it as a line terminator too.
+        _write_env_file(tmp_path, "local-desktop2-standalone\r")
+        assert get_deploy_environment() == "local-desktop2-standalone"
 
     def test_empty_file_falls_back_to_default(self, tmp_path):
         _write_env_file(tmp_path, "")
