@@ -28,8 +28,22 @@ CLI_FEATURE_FLAG_REGISTRY: dict[str, FeatureFlagInfo] = {
 }
 
 
+def _coerce_bool(v: str) -> bool:
+    """Strict bool coercion: only 'true'/'false' (case-insensitive).
+
+    Anything else raises ValueError so the caller can warn and drop the flag,
+    rather than silently treating typos like 'ture' or 'yes' as False.
+    """
+    lower = v.lower()
+    if lower == "true":
+        return True
+    if lower == "false":
+        return False
+    raise ValueError(f"expected 'true' or 'false', got {v!r}")
+
+
 _COERCE_FNS: dict[str, Any] = {
-    "bool": lambda v: v.lower() == "true",
+    "bool": _coerce_bool,
     "int": lambda v: int(v),
     "float": lambda v: float(v),
 }
@@ -38,8 +52,9 @@ _COERCE_FNS: dict[str, Any] = {
 def _coerce_flag_value(key: str, raw_value: str) -> Any:
     """Coerce a raw string value using the registry type, or keep as string.
 
-    Returns the raw string if the key is unregistered, the type is unknown,
-    or coercion fails (with a warning logged in the failure case).
+    Returns the raw string if the key is unregistered or the type is unknown.
+    Raises ValueError/TypeError if the key is registered with a known type but
+    the value cannot be coerced; callers are expected to warn and drop the flag.
     """
     info = CLI_FEATURE_FLAG_REGISTRY.get(key)
     if info is None:
@@ -47,20 +62,16 @@ def _coerce_flag_value(key: str, raw_value: str) -> Any:
     coerce = _COERCE_FNS.get(info["type"])
     if coerce is None:
         return raw_value
-    try:
-        return coerce(raw_value)
-    except (ValueError, TypeError):
-        logging.warning(
-            "Could not coerce --feature-flag %s=%r to %s; using raw string.",
-            key, raw_value, info["type"],
-        )
-        return raw_value
+    return coerce(raw_value)
 
 
 def _parse_cli_feature_flags() -> dict[str, Any]:
     """Parse --feature-flag key=value pairs from CLI args into a dict.
 
     Items without '=' default to the value 'true' (bare flag form).
+    Flags whose value cannot be coerced to the registered type are dropped
+    with a warning, so a typo like '--feature-flag some_bool=ture' does not
+    silently take effect as the wrong value.
     """
     result: dict[str, Any] = {}
     for item in getattr(args, "feature_flag", []):
@@ -70,7 +81,14 @@ def _parse_cli_feature_flags() -> dict[str, Any]:
             continue
         if not sep:
             raw_value = "true"
-        result[key] = _coerce_flag_value(key, raw_value.strip())
+        try:
+            result[key] = _coerce_flag_value(key, raw_value.strip())
+        except (ValueError, TypeError) as e:
+            info = CLI_FEATURE_FLAG_REGISTRY.get(key, {})
+            logging.warning(
+                "Could not coerce --feature-flag %s=%r to %s (%s); dropping flag.",
+                key, raw_value.strip(), info.get("type", "?"), e,
+            )
     return result
 
 

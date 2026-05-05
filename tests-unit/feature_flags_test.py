@@ -1,5 +1,7 @@
 """Tests for feature flags functionality."""
 
+import pytest
+
 from comfy_api.feature_flags import (
     get_connection_feature,
     supports_feature,
@@ -116,14 +118,26 @@ class TestCoerceFlagValue:
         assert _coerce_flag_value("unknown_flag", "true") == "true"
         assert _coerce_flag_value("unknown_flag", "42") == "42"
 
-    def test_failed_coercion_falls_back_to_string(self, monkeypatch):
-        """Malformed values for typed flags must not crash; raw string is returned."""
+    def test_bool_typo_raises(self):
+        """Strict bool: typos like 'ture' or 'yes' must raise so the flag can be dropped."""
+        with pytest.raises(ValueError):
+            _coerce_flag_value("show_signin_button", "ture")
+        with pytest.raises(ValueError):
+            _coerce_flag_value("show_signin_button", "yes")
+        with pytest.raises(ValueError):
+            _coerce_flag_value("show_signin_button", "1")
+        with pytest.raises(ValueError):
+            _coerce_flag_value("show_signin_button", "")
+
+    def test_failed_int_coercion_raises(self, monkeypatch):
+        """Malformed values for typed flags must raise; caller decides what to do."""
         monkeypatch.setitem(
             CLI_FEATURE_FLAG_REGISTRY,
             "test_int_flag",
             {"type": "int", "default": 0, "description": "test"},
         )
-        assert _coerce_flag_value("test_int_flag", "not_a_number") == "not_a_number"
+        with pytest.raises(ValueError):
+            _coerce_flag_value("test_int_flag", "not_a_number")
 
 
 class TestParseCliFeatureFlags:
@@ -144,6 +158,19 @@ class TestParseCliFeatureFlags:
         monkeypatch.setattr("comfy_api.feature_flags.args", type("Args", (), {"feature_flag": ["=value", "valid=1"]})())
         result = _parse_cli_feature_flags()
         assert result == {"valid": "1"}
+
+    def test_invalid_bool_value_dropped(self, monkeypatch, caplog):
+        """A typo'd bool value must be dropped entirely, not silently set to False
+        and not stored as a raw string. A warning must be logged."""
+        monkeypatch.setattr(
+            "comfy_api.feature_flags.args",
+            type("Args", (), {"feature_flag": ["show_signin_button=ture", "valid=1"]})(),
+        )
+        with caplog.at_level("WARNING"):
+            result = _parse_cli_feature_flags()
+        assert result == {"valid": "1"}
+        assert "show_signin_button" not in result
+        assert any("show_signin_button" in r.message and "drop" in r.message.lower() for r in caplog.records)
 
 
 class TestCliFeatureFlagRegistry:
