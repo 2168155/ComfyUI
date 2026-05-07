@@ -2115,76 +2115,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/CloudError"
 
-  /api/job/{job_id}:
-    get:
-      operationId: getCloudJob
-      tags: [queue]
-      summary: Get a single cloud job by ID
-      description: "[cloud-only] Returns the full cloud job record, including workflow, outputs, and execution metadata."
-      x-runtime: [cloud]
-      parameters:
-        - name: job_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: The job ID to fetch.
-      responses:
-        "200":
-          description: Cloud job detail
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CloudJob"
-        "401":
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CloudError"
-        "404":
-          description: Not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CloudError"
-
-  /api/job/{job_id}/outputs:
-    get:
-      operationId: getCloudJobOutputs
-      tags: [queue]
-      summary: Get outputs for a cloud job
-      description: "[cloud-only] Returns the output assets produced by a cloud job execution."
-      x-runtime: [cloud]
-      parameters:
-        - name: job_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: The job ID to fetch outputs for.
-      responses:
-        "200":
-          description: Job outputs
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CloudJobOutputs"
-        "401":
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CloudError"
-        "404":
-          description: Not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CloudError"
-
   /api/job/{job_id}/status:
     get:
       operationId: getCloudJobStatus
@@ -6958,51 +6888,6 @@ components:
           additionalProperties: true
           description: Additional error context
 
-    CloudJob:
-      type: object
-      x-runtime: [cloud]
-      description: "[cloud-only] Full cloud job record including workflow and execution metadata."
-      required:
-        - id
-        - status
-      properties:
-        id:
-          type: string
-          format: uuid
-        status:
-          type: string
-          enum: [pending, running, completed, failed, cancelled]
-        workflow:
-          type: object
-          additionalProperties: true
-          description: Submitted workflow graph
-        outputs:
-          type: object
-          additionalProperties: true
-          description: Execution outputs keyed by node ID
-        created_at:
-          type: string
-          format: date-time
-        started_at:
-          type: string
-          format: date-time
-          nullable: true
-        completed_at:
-          type: string
-          format: date-time
-          nullable: true
-        workflow_id:
-          type: string
-          format: uuid
-          nullable: true
-        machine_id:
-          type: string
-          nullable: true
-        error:
-          type: string
-          nullable: true
-          description: Error message if the job failed
-
     CloudJobStatus:
       type: object
       x-runtime: [cloud]
@@ -7030,21 +6915,6 @@ components:
           type: string
           format: date-time
           nullable: true
-
-    CloudJobOutputs:
-      type: object
-      x-runtime: [cloud]
-      description: "[cloud-only] Output assets produced by a cloud job execution."
-      properties:
-        outputs:
-          type: object
-          additionalProperties: true
-          description: Output data keyed by node ID
-        assets:
-          type: array
-          items:
-            $ref: "#/components/schemas/Asset"
-          description: Asset records created from job outputs
 
     CloudPrompt:
       type: object
