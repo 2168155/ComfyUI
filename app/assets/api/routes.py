@@ -590,7 +590,7 @@ async def set_asset_preview_route(request: web.Request) -> web.Response:
 async def clear_asset_preview_route(request: web.Request) -> web.Response:
     reference_id = str(uuid.UUID(request.match_info["id"]))
     try:
-        result = set_asset_preview(
+        set_asset_preview(
             reference_id=reference_id,
             preview_reference_id=None,
             owner_id=USER_MANAGER.get_request_user_id(request),
