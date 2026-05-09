@@ -263,7 +263,7 @@ class FluxKVCache(io.ComfyNode):
             node_id="FluxKVCache",
             display_name="Flux KV Cache",
             description="Enables KV Cache optimization for reference images on Flux family models.",
-            category="",
+            category="experimental",
             is_experimental=True,
             inputs=[
                 io.Model.Input("model", tooltip="The model to use KV Cache on."),
