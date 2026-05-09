@@ -160,7 +160,7 @@ class ImageAddNoise(IO.ComfyNode):
             node_id="ImageAddNoise",
             search_aliases=["film grain"],
             display_name="Add Noise to Image",
-            category="image/postprocessing",
+            category="image/filters",
             inputs=[
                 IO.Image.Input("image"),
                 IO.Int.Input(
