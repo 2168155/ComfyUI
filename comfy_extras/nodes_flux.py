@@ -215,7 +215,7 @@ class Flux2Scheduler(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="Flux2Scheduler",
-            category="sampling/custom_sampling/schedulers",
+            category="sampling/schedulers",
             inputs=[
                 io.Int.Input("steps", default=20, min=1, max=4096),
                 io.Int.Input("width", default=1024, min=16, max=nodes.MAX_RESOLUTION, step=1),
