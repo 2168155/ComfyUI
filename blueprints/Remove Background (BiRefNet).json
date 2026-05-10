@@ -74,6 +74,7 @@
         "revision": 0,
         "config": {},
         "name": "Remove Background (BiRefNet)",
+        "description": "Removes or replaces image backgrounds using BiRefNet segmentation and alpha compositing.",
         "inputNode": {
           "id": -10,
           "bounding": [
