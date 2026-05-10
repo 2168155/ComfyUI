@@ -793,7 +793,8 @@ class BasicGuider(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="BasicGuider",
-            category="sampling/custom_sampling/guiders",
+            display_name="Basic Guider",
+            category="sampling/guiders",
             inputs=[
                 io.Model.Input("model"),
                 io.Conditioning.Input("conditioning"),
@@ -814,7 +815,8 @@ class CFGGuider(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="CFGGuider",
-            category="sampling/custom_sampling/guiders",
+            display_name="CFG Guider",
+            category="sampling/guiders",
             inputs=[
                 io.Model.Input("model"),
                 io.Conditioning.Input("positive"),
@@ -868,7 +870,8 @@ class DualCFGGuider(io.ComfyNode):
         return io.Schema(
             node_id="DualCFGGuider",
             search_aliases=["dual prompt guidance"],
-            category="sampling/custom_sampling/guiders",
+            display_name="Dual CFG Guider",
+            category="sampling/guiders",
             inputs=[
                 io.Model.Input("model"),
                 io.Conditioning.Input("cond1"),
