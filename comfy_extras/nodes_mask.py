@@ -195,7 +195,7 @@ class SolidMask(IO.ComfyNode):
     @classmethod
     def define_schema(cls):
         return IO.Schema(
-            node_id="CreateSolidMask",
+            node_id="SolidMask",
             display_name="Create Solid Mask",
             category="image/mask",
             inputs=[
