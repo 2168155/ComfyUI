@@ -157,7 +157,7 @@ NODE_CLASS_MAPPINGS = {
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "ImageOnlyCheckpointLoader": "Image Only Checkpoint Loader (img2vid model)",
+    "ImageOnlyCheckpointLoader": "Load Checkpoint Image Only (img2vid model)",
     "VideoLinearCFGGuidance": "Video Linear CFG Guidance",
     "VideoTriangleCFGGuidance": "Video Triangle CFG Guidance",
 }
