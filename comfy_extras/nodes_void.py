@@ -122,7 +122,8 @@ class VOIDQuadmaskPreprocess(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="VOIDQuadmaskPreprocess",
-            category="mask/video",
+            display_name="VOID Quadmask Preprocessor",
+            category="image/mask",
             inputs=[
                 io.Mask.Input("mask"),
                 io.Int.Input("dilate_width", default=0, min=0, max=50, step=1,
